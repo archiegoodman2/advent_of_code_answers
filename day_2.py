@@ -1,70 +1,72 @@
-puzzle_input = '''Game 1: 4 red, 5 blue, 9 green; 7 green, 7 blue, 3 red; 16 red, 7 blue, 3 green; 11 green, 11 blue, 6 red; 12 red, 14 blue
-Game 2: 12 blue, 11 green, 3 red; 6 blue, 5 green, 7 red; 5 red, 11 blue; 2 blue, 8 green
-Game 3: 8 blue, 5 green, 2 red; 5 blue, 5 green, 7 red; 7 blue, 1 green, 7 red; 8 green, 14 blue, 7 red; 8 green, 14 blue; 8 blue, 2 green, 8 red
-'''
+import re
 
-# Initialize an empty dictionary to store game outcomes
-games_dict = {}
+test_input = '''Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green'''
 
-# I'd say this is our goal data structure. This is probably way more complex than it needs to be lol 
-example_data_structure = {
-    1: [{'r': 1, 'g': 2, 'b': 3}, {'r': 1, 'g': 1}],
-    2: [{'r': 10, 'g': 2, 'b': 3}, {'r': 1, 'g': 1, 'b': 10}],
-    3: [{'r': 4, 'g': 2, 'b': 3}, {'r': 1, 'g': 3}]
-}
+def main(input):
+    # Initialize dictionary to store the resulting data structure
+    cube_data = {}
 
-# Split the input into a list of games
-list_of_games = puzzle_input.split("\n")[:-1]  # This is now a list of strings
+    # Split the input into a list of games
+    list_of_games = input.split("\n")[:-1]
 
-# Iterate through each game and process the data
-for game in list_of_games:
-    # For every game in our list of games, we're going to process that data and add each one to our dict
-    game_info = game.split(": ")
-    game_numbers = int(game_info[0].split(" ")[1])  # Get game number out
-    outcomes = game_info[1].split("; ")  # Store outcomes as a list of strings, something like ['red = 1, blue = 2', 'red = 1, blue = 5, green = 10'] etc
-    games_dict[game_numbers] = outcomes  # Build our dict
+    # Iterate through each game and process the data
+    for game in list_of_games:
+        # Get game number from the game information
+        game_info = game.split(": ")
+        game_number = int(game_info[0].split(" ")[1])
 
-    # So now we go back into our list of strings, where each string is the result of one game:
+        # Get subsets of cubes from the game information
+        outcomes = [re.findall(r'(\d+) (\w+)|(\d+) (\w+)|(\d+) (\w+)', subset)[0] for subset in game_info[1].split("; ")]
 
-    game_outcomes_list = []  # List that stores outcomes of the game we're currently looking at in our loop
+        game_data = []
+        for outcome in outcomes:
+            # Initialize a dictionary for each subset
+            outcome_dict = {'green': 0, 'blue': 0, 'red': 0}
+            for i in range(0, len(outcome), 2):
+                count = int(outcome[i])
+                color = outcome[i + 1].lower()
+                outcome_dict[color] = count
+            # Add this dictionary to the game_data list
+            game_data.append(outcome_dict)
 
-    for outcome in outcomes:
-        count, *colour = outcome.split(" ")  # Splits each element (outcome) into a list with two elements,
-        # where the first element of each is assigned the variable count and the second assigned to colour
-        # So now it'll be like [[red, 1], [blue, 2]], [[red, 5], [blue, 10], [green, 12]], etc.
-        count = int(count)  # Currently the count is a string not an int so we want to make it an int
+        # Add the game_data list to the right game number in the example_array dictionary
+        cube_data[game_number] = game_data
 
-        # Initialize our goal data structure to represent each bag draw that makes up a game
-        outcome_dict = {'r': 0, 'g': 0, 'b': 0}
-        outcome_dict[colour] = count  # Set the value of each key to our count
+    # Now we have our accessible data structure, time to access it and check against the numbers
 
-        game_outcomes_list.append(outcome_dict)  # Now we have our list of dictionaries
+    # We are allowed 12 red cubes, 13 green cubes, and 14 blue cubes
 
-    games_dict[game_numbers] = game_outcomes_list  # Setting each value of our dictionary (where the keys are the game IDs) to the list of dicts, where each element (each dict) is a bag draw
+    game_number = 1  # Could use the enumerate function, but our game numbers start at 1
 
-# Now let's define our limits, as provided in the question, and loop thru to see which games exceed these
+    running_total = 0  # Initialize the starting value for our final answer
 
-total_of_game_IDs = 0
+    for game in cube_data.values():
+        # Now each 'game' iteration should be a list of dicts
 
-limits = {'r': 12, 'g': 13, 'b': 14}
+        # We're going to initialize our counters here, they should reset when our loop moves onto the next game
+        number_of_green_cubes = 13
+        number_of_blue_cubes = 14
+        number_of_red_cubes = 12
 
-# Let's loop through every game in our big dict of games
-for game_number, outcomes_list in games_dict.items():
-    # Default is to set to true
-    possible = True
+        # Now loop through each dict in our list of dicts
+        for draw in game:
+            # Now each 'draw' should be a dict, so we simply access the values in that dict
+            number_of_blue_cubes -= draw['blue']
+            number_of_green_cubes -= draw['green']
+            number_of_red_cubes -= draw['red']
 
-    for outcome_dict in outcomes_list:  # Outcomes_list is the list of dicts for each game, where each dict is each bag draw
-        for colour, count in outcome_dict.items():
-            limits[colour] -= count  # So for each bag draw we take away the quantity of each colour from our limit,
-            # and if we end up with a negative number at the end, we've exceeded our limit
-            if limits[colour] < 0:
-                possible = False
-                break
-            if not possible:
-                break
+        # Once we're out of this loop, we should have the number of remaining cubes of each color, in the bag
 
-        if possible:  # If it's possible then we'll add that to our running total of possible game IDs
-            total_of_game_IDs += game_number
+        # So let's check if this game is allowed and if so, add it to our running total. if there is a negative number of cubes in the bag, this is clearly not possible.
+        if number_of_blue_cubes >= 0 and number_of_green_cubes >= 0 and number_of_red_cubes >= 0:
+            running_total += game_number 
 
-# Print the final running total of possible games
-print(f"Total of game IDs for possible games: {total_of_game_IDs}")
+        game_number += 1
+
+    return running_total  # Our final answer
+
+print(main(test_input))
