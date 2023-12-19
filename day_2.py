@@ -22,6 +22,9 @@ def main(input):
         # Get subsets of cubes from the game information
         outcomes = [re.findall(r'(\d+) (\w+)|(\d+) (\w+)|(\d+) (\w+)', subset)[0] for subset in game_info[1].split("; ")]
 
+        #the issue here is that we aren't capturing the 5th Game 
+
+        
         game_data = []
         for outcome in outcomes:
             # Initialize a dictionary for each subset
